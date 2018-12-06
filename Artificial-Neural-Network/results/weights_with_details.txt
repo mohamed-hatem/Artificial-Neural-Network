@@ -1,0 +1,14 @@
+Weights of the Neural Network : 
+Weights of matrix between input and hidden layer : 
+Weights of each input node to hidden node #1 : 0.535 , 0.561 , 0.398 , 0.653 , 0.515 , 0.973 , 0.611 , 0.755
+Weights of each input node to hidden node #2 : 0.755 , 0.024 , 0.682 , 0.942 , 0.292 , 0.056 , 0.695 , 0.493
+Weights of each input node to hidden node #3 : 0.703 , 0.87 , 0.777 , 0.543 , 0.136 , 0.967 , 0.57 , 0.489
+Weights of each input node to hidden node #4 : 0.9 , 0.52 , 0.915 , 0.472 , 0.251 , 0.871 , 0.972 , 0.329
+Weights of each input node to hidden node #5 : 0.946 , 0.228 , 0.4 , 0.821 , 0.962 , 0.627 , 0.865 , 0.768
+Weights of each input node to hidden node #6 : 0.839 , 0.9 , 0.469 , 0.62 , 0.344 , 0.589 , 0.956 , 0.39
+Weights of each input node to hidden node #7 : 0.365 , 0.477 , 0.599 , 0.995 , 0.287 , 0.371 , 0.394 , 0.118
+Weights of each input node to hidden node #8 : 0.33 , 0.363 , 0.922 , 0.732 , 0.31 , 0.306 , 0.462 , 0.196
+Weights of each input node to hidden node #9 : 0.397 , 0.313 , 0.457 , 0.622 , 0.95 , 0.594 , 0.258 , 0.738
+Weights of each input node to hidden node #10 : 0.508 , 0.508 , 0.126 , 0.218 , 0.677 , 0.481 , 0.243 , 0.103
+Weights of matrix between hidden and output layer : 
+Weights of each hidden node to output node #1 : 0.635 , 0.163 , 0.75 , 0.354 , 0.618 , 0.325 , 0.375 , 0.892 , 0.182 , 0.051
