@@ -17,6 +17,7 @@
 //NAMESPACES
 using namespace std;
 
+
 //CONSTANTS
 //File name for the data set that will be used to train the network
 #define INPUT_FILE_NAME "data-set/train.txt"
@@ -31,7 +32,7 @@ using namespace std;
 //Indicate if we want to train the neural network or not
 #define ALLOW_TRAINING true
 //Indicate if we want to test the nerual network or not
-#define ALLOW_TESTING false
+#define ALLOW_TESTING true
 
 
 
@@ -42,6 +43,10 @@ private:
 
 	//Variable to hold the MSE of the data set
 	float mean_square_error;
+	//The last index of data we will use for training
+	int training_data_max_index;
+	//The starting index of data we will use for testing
+	int testing_data_start_index;
 	
 	//SIZES
 	//Number of nodes in input layer
@@ -92,14 +97,25 @@ private:
 	}
 
 	//Function to Calculate the MSE
-	void calculateMSE()
+	void calculateMSE(string type)
 	{
 		mean_square_error = 0.0;
-		for (int i = 0; i < data_set_size; i++)
+		int i = 0, max_index = 0;
+		if (type == "test")
+		{
+			i = testing_data_start_index;
+			max_index = data_set_size;
+
+		}
+		else
+		{
+			max_index = training_data_max_index;
+		}
+		for (; i < max_index; i++)
 		{
 			mean_square_error += square_error[i];
 		}
-		mean_square_error /= data_set_size;
+		mean_square_error /= training_data_max_index;
 	}
 
 	//Function to initialize the matrices and arrays
@@ -173,13 +189,14 @@ private:
 
 	}
 
-	//Function to generate a random float number for the initial weights
+	//Function to generate a random float number for the initial weights between -1 and 1
 	float generateRandomFloat()
 	{	
 		//Generate a random float between 0 - 1
 		float random_float = (rand() % 1001) / 1000.0;
-
+		if(rand()%100<=50)
 		return random_float;
+		return random_float * -1;
 
 	}
 
@@ -318,6 +335,11 @@ public:
 		//Fourth input is the data set size
 		input_file >> data_set_size;
 
+        //Half of the data set will be used for training and the other half for testing 
+		training_data_max_index = data_set_size / 2;
+		testing_data_start_index = data_set_size / 2;
+		
+
 		//Initialize the matrices and arrays
 		initializeResources();
 		
@@ -382,19 +404,19 @@ public:
 			}
 			cout << endl;
 		}
-
+		cout << endl;
 
 	}
 
-	//Print values and MSE of the Network
-	void printResults()
+	//Print values and MSE of the network after training
+	void printResultsOfTraining()
 	{
 		
 		cout << "MSE = " << mean_square_error << endl;
 
 		cout << "Results of the network compared to actual : " << endl;
 
-		for (int i = 0; i < data_set_size; i++)
+		for (int i = 0; i < training_data_max_index; i++)
 		{
 			cout << "data set #" << i + 1 << " actual output: ";
 			for (int j = 0; j < output_layer_nodes; j++)
@@ -410,6 +432,32 @@ public:
 		}
 		
 	}
+
+	//Print values and MSE of the network after testing
+	void printResultsOfTesting()
+	{
+
+		cout << "MSE = " << mean_square_error << endl;
+
+		cout << "Results of the network compared to actual : " << endl;
+
+		for (int i = testing_data_start_index; i < data_set_size; i++)
+		{
+			cout << "data set #" << i + 1 << " actual output: ";
+			for (int j = 0; j < output_layer_nodes; j++)
+			{
+				cout << actual_values[i][j] << " ";
+			}
+			cout << "network output: ";
+			for (int j = 0; j < output_layer_nodes; j++)
+			{
+				cout << output_values[i][j] << " ";
+			}
+			cout << endl;
+		}
+
+	}
+
 
 	//Destructor
 	~NeuralNetwork()
@@ -442,10 +490,21 @@ public:
 
 	
 	//Feed forward function
-	void feedForward()
-	{
+	void feedForward(string type)
+	{ //iterator for the algorithm
+		int i = 0,max_index=0;
+		if (type == "test")
+		{
+			i = testing_data_start_index;
+			max_index = data_set_size;
+
+		}
+		else
+		{
+			max_index = training_data_max_index;
+		}
 		
-		for (int i = 0; i < data_set_size; i++)
+		for (; i < max_index; i++)
 		{
 			
 			//Set the input vector with the data row of the current iteration
@@ -461,9 +520,10 @@ public:
 			
 				//Preform sum of product on each hidden layer node
 				sumOfProduct(input_hidden_weights[j], input_values, input_layer_nodes, hidden_values[j]);
-			
+				
 				//Calculate the output of each hidden layer node by applying activiation function (Sigmoid)
 				activationFunction(hidden_values[j]);
+				
 				
 			}
 
@@ -474,6 +534,7 @@ public:
 			*/
 			for (int j = 0; j < output_layer_nodes; j++)
 			{
+				
 				//Preform sum of product on each output layer node
 				sumOfProduct(hidden_output_weights[j], hidden_values, hidden_layer_nodes, output_values[i][j]);
 				
@@ -486,7 +547,7 @@ public:
 			calculateSquareErrorForCurrentTestCase(i);
 		}
 		//Calculate the MSE
-		calculateMSE();
+		calculateMSE(type);
 	}
 
 	/*
@@ -562,22 +623,21 @@ void trainNetwork()
 	
 	for (int i = 0; i < MAX_ITERATIONS_FOR_TRAINING; i++)
 	{
-		neuralnetwork.feedForward();
+		neuralnetwork.feedForward("train");
 		
 		if (neuralnetwork.getMSE()<= MINIMUM_MSE)
 		{
 			cout << "achieved MSE less than the required minimum" << endl;
-			neuralnetwork.outputWeightsToFiles();
-			neuralnetwork.printResults();
+			/*neuralnetwork.printResultsOfTraining();
+			neuralnetwork.outputWeightsToFiles();*/
 			return;
 		}
 		//Backpropagation goes here
+		//neuralnetwork.backPropagation();
 	}
 	cout << "Couldnt get a mean square error lower than the required minimum" << endl;
-	cout << "Results :" << endl;
-	neuralnetwork.printResults();
-	cout << "Network Details :" << endl;
-	neuralnetwork.printNetworkDetails();
+	/*neuralnetwork.printResultsOfTraining();*/
+	neuralnetwork.outputWeightsToFiles();
 	return;
 }
 
@@ -585,9 +645,8 @@ void trainNetwork()
 void testNetwork()
 {
 	neuralnetwork.loadWeightsFromFile();
-	neuralnetwork.feedForward();
-	neuralnetwork.outputWeightsToFiles();
+	neuralnetwork.feedForward("test");
 	neuralnetwork.printNetworkDetails();
-	neuralnetwork.printResults();
+	neuralnetwork.printResultsOfTesting();
 
 }
