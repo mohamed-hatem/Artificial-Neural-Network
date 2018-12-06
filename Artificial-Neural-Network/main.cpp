@@ -1,7 +1,9 @@
-/*
-*This program is a simple artificial neural network
+/****************************************************************************************
+*This program is a simple artificial neural network with 3 layers (input, hidden, output)
 *Feed forward and back propagation will be preformed in order to train the network
-*/
+*Optimal weights will be stored in a file (weights.txt) inside folder results
+*****************************************************************************************/
+
 
 //HEADERS
 #include <iostream>
@@ -16,7 +18,6 @@
 using namespace std;
 
 //CONSTANTS
-
 //File name for the data set that will be used to train the network
 #define INPUT_FILE_NAME "data-set/train.txt"
 //Output file to print the weights in
@@ -26,7 +27,7 @@ using namespace std;
 //Minimum MSE that will be used for the break condition
 #define MINIMUM_MSE 0.5
 //Max number of iterations to be preformed during training
-#define MAX_ITERATIONS_FOR_TRAINING 500
+#define MAX_ITERATIONS_FOR_TRAINING 1
 //Indicate if we want to train the neural network or not
 #define ALLOW_TRAINING true
 //Indicate if we want to test the nerual network or not
@@ -39,6 +40,9 @@ class NeuralNetwork
 {
 private:
 
+	//Variable to hold the MSE of the data set
+	float mean_square_error;
+	
 	//SIZES
 	//Number of nodes in input layer
 	int input_layer_nodes;
@@ -58,25 +62,34 @@ private:
 	float ** data_set;
 	//The actual output values for the data set that will be used in computing the MSE
 	float **actual_values;
+	//Matrix to hold the final output values for the neural network taken from the output layer nodes
+	float ** output_values;
 
 	//ARRAYS
 	//Array to hold the input values for the neural network
 	float * input_values;
 	//Array to hold the output values for the hidden layer nodes
 	float * hidden_values;
-	//Array to hold the final output values for the neural network taken from the output layer nodes
-	float * output_values;
+	
 	/*
 	*Array to hold the error values for each test
 	*Will be used later to calculate the MSE
 	*/
 	float * square_error;
+		
+	//PRIVATE FUNCTIONS
+	//Seed random function
+	void seedRand()
+	{
+		//Declare variable to hold seconds on clock.
+		time_t seconds;
 
+		//Get value from system clock and	place in seconds variable
+		time(&seconds);
 
-	//Integer to indicate which test case in the data set we are working on
-	int current_test_case;
-	//Variable to hold the MSE of the data set
-	float mean_square_error;
+		//Convert seconds to a unsigned integer
+		srand((unsigned int)seconds);
+	}
 
 	//Function to Calculate the MSE
 	void calculateMSE()
@@ -110,14 +123,18 @@ private:
 		for (int i = 0; i<data_set_size; i++)
 			data_set[i] = new float[input_layer_nodes];
 
+		//Initialize the final output values matrix
+		output_values = new float*[data_set_size];
+		for (int i = 0; i < data_set_size; i++)
+			output_values[i] = new float[output_layer_nodes];
+
 		//Initialize the input values array
 		input_values = new float[input_layer_nodes];
 
 		//Initialize the hidden  layer output values array
 		hidden_values = new float[hidden_layer_nodes];
 
-		//Initialize the final output values array
-		output_values = new float[output_layer_nodes];
+		
 
 		//Initialize the actual values array for the data set
 		actual_values = new float*[data_set_size];
@@ -158,7 +175,8 @@ private:
 
 	//Function to generate a random float number for the initial weights
 	float generateRandomFloat()
-	{   //Generate a random float between 0 - 1
+	{	
+		//Generate a random float between 0 - 1
 		float random_float = (rand() % 1001) / 1000.0;
 
 		return random_float;
@@ -168,37 +186,42 @@ private:
 	//Activation function (Sigmoid)
 	void activationFunction(float &value)
 	{
-	   value = 1/( 1 + exp(value*-1));
+		float denom = 1 + exp(value*-1);
+	   value = 1.0/denom;
 	}
 
 	//Function to preform matrix vector multiplication
 	void sumOfProduct(float * &matrix, float * &vector,int &vector_size,float &sum_of_product)
-	{
-		sum_of_product = 0;
+	{  
+		
+		sum_of_product = 0.0;
+		
 		for (int i = 0; i < vector_size; i++)
 		{
+			//cout << "weight: " << matrix[i] << "  vector: " << vector[i] << endl;
 			sum_of_product += (matrix[i] * vector[i]);
 		}
-
+		
 	}
 
 	//Function to calculate the square error for a certain test case
-	void calculateSquareErrorForCurrentTestCase()
+	void calculateSquareErrorForCurrentTestCase(int current_test_case)
 	{   //Initialize the value 
 		square_error[current_test_case] = 0.0;
 		//Iterate over all the output values that was calculated from the output layer 
 		for (int i = 0; i < output_layer_nodes; i++)
 		{  //square error = Segma (actual-produced)^2
-			square_error[current_test_case] += (actual_values[current_test_case][i] - output_values[i]) * (actual_values[current_test_case][i] - output_values[i]);
+			square_error[current_test_case] += (actual_values[current_test_case][i] - output_values[current_test_case][i]) * (actual_values[current_test_case][i] - output_values[current_test_case][i]);
 		}
 	}
 
 	//Function to set the input vector
-	void setInputValues()
+	void setInputValues(int current_test_case)
 	{
 		for (int i = 0; i < input_layer_nodes; i++)
 		{
 			input_values[i] = data_set[current_test_case][i];
+			
 		}
 
 	}
@@ -240,12 +263,11 @@ private:
 		output_file.close();
 	}
 
-	//Output the weights withoud details
+	//Output the weights without details
 	void outputWeightstoFile()
 	{
 		ofstream output_file;
 		output_file.open(WEIGHTS_FILE_NAME);
-		output_file << input_layer_nodes <<" "<< hidden_layer_nodes <<" "<<output_layer_nodes<<endl;
 		for (int i = 0; i < hidden_layer_nodes; i++)
 		{
 			for (int j = 0; j < input_layer_nodes; j++)
@@ -269,7 +291,10 @@ private:
 		output_file.close();
 	}
 
+
 public:
+
+	//PUBLIC FUNCTIONS
 	//Function return the MSE
 	float getMSE()
 	{
@@ -282,7 +307,8 @@ public:
 		//Create and open file variable to read input from
 		fstream input_file;
 		input_file.open(INPUT_FILE_NAME);
-
+		//Seed
+		seedRand();
 		//First input is the the number of nodes in the input layer
 		input_file >> input_layer_nodes;
 		//Second input is the number of nodes in the hidden layer
@@ -329,7 +355,9 @@ public:
 				cout << data_set[i][j] << " ";
 
 			}
-			cout << actual_values[i] << endl;
+			for(int j=0;j<output_layer_nodes;j++)
+			cout << actual_values[i][j] << " ";
+			cout << endl;
 
 		}
 		cout << endl << "Input hidden layer weights matrix : " << endl;
@@ -361,7 +389,25 @@ public:
 	//Print values and MSE of the Network
 	void printResults()
 	{
+		
 		cout << "MSE = " << mean_square_error << endl;
+
+		cout << "Results of the network compared to actual : " << endl;
+
+		for (int i = 0; i < data_set_size; i++)
+		{
+			cout << "data set #" << i + 1 << " actual output: ";
+			for (int j = 0; j < output_layer_nodes; j++)
+			{
+				cout << actual_values[i][j] << " ";
+			}
+			cout << "network output: ";
+			for (int j = 0; j < output_layer_nodes; j++)
+			{
+				cout << output_values[i][j] << " ";
+			}
+			cout << endl;
+		}
 		
 	}
 
@@ -370,8 +416,12 @@ public:
 	{
 		delete[] input_values;
 		delete[] hidden_values;
-		delete[] output_values;
 		delete[] square_error;
+
+		for (int i = 0; i < output_layer_nodes; i++)
+			delete[] output_values[i];
+		delete[] output_values;
+
 		for (int i = 0; i < output_layer_nodes; i++)
 			delete[] actual_values[i];
 		delete[]actual_values;
@@ -387,42 +437,53 @@ public:
 		for (int i = 0; i<data_set_size; i++)
 			delete[] data_set[i];
 		delete[] data_set;
+
 	}
 
 	
 	//Feed forward function
 	void feedForward()
-	{   
-		for (int j = 0; j < data_set_size; j++)
+	{
+		
+		for (int i = 0; i < data_set_size; i++)
 		{
-			//Which test case of the data set we are currently working on
-			current_test_case = j;
+			
+			//Set the input vector with the data row of the current iteration
+			setInputValues(i);
+			
 			/*
 			 *First step is to do sum of product on each hidden layer node
 			 *Second step is to apply activation function and store the output values to be used as an input for next layer
 			 */
-			for (int i = 0; i < hidden_layer_nodes; i++)
-			{   //Preform sum of product on each hidden layer node
-				sumOfProduct(input_hidden_weights[i], input_values, input_layer_nodes, hidden_values[i]);
-				//Calculate the output of each hidden layer node by applying activation function (Sigmoid)
-				activationFunction(hidden_values[i]);
+			
+			for (int j = 0; j < hidden_layer_nodes; j++)
+			{   
+			
+				//Preform sum of product on each hidden layer node
+				sumOfProduct(input_hidden_weights[j], input_values, input_layer_nodes, hidden_values[j]);
+			
+				//Calculate the output of each hidden layer node by applying activiation function (Sigmoid)
+				activationFunction(hidden_values[j]);
+				
 			}
 
-
+			
 			/*
 			*First step is to do sum of product on each output layer node
 			*Second step is to apply activation function and store the output values to be used to caluclate the error
 			*/
-			for (int i = 0; i < output_layer_nodes; i++)
+			for (int j = 0; j < output_layer_nodes; j++)
 			{
 				//Preform sum of product on each output layer node
-				sumOfProduct(hidden_output_weights[i], hidden_values, hidden_layer_nodes, output_values[i]);
+				sumOfProduct(hidden_output_weights[j], hidden_values, hidden_layer_nodes, output_values[i][j]);
+				
+				
 				//Calculate the output of each output layer node by applying activiation function (Sigmoid)
-				activationFunction(output_values[i]);
+				activationFunction(output_values[i][j]);
 			}
-
+			
 			//Calculate the square error
-			calculateSquareErrorForCurrentTestCase();
+			calculateSquareErrorForCurrentTestCase(i);
 		}
 		//Calculate the MSE
 		calculateMSE();
@@ -440,27 +501,48 @@ public:
 		
 	}
 	
+	//Function to load weights of matrices from file
+	void loadWeightsFromFile()
+	{
 
+		fstream weights_file;
+		weights_file.open(WEIGHTS_FILE_NAME);
+		
+		for (int i = 0; i < hidden_layer_nodes; i++)
+		{
+			for (int j = 0; j < input_layer_nodes; j++)
+			{
+				weights_file >> input_hidden_weights[i][j];
+			}
+		}
+		for (int i = 0; i < output_layer_nodes; i++)
+		{
+			for (int j = 0; j < hidden_layer_nodes; j++)
+			{
+				weights_file >> hidden_output_weights[i][j];
+			}
+		}
+		weights_file.close();
+
+	}
 
 };
 
-//Global Variables
-
+//GLOBAL VARIABLES
 //Our neural network
 NeuralNetwork neuralnetwork;
 
-//Function prototypes
+//FUNCTION PROTOTYPES
 void trainNetwork();
 void testNetwork();
 
 //Entry point of our program
 int main()
-{   
-	system("color 70");
-	//Seed rand function to use in generating random floats
-	srand(time(NULL));
-    //Get input (training or testing) from file	
+{	system("color 70");
+
+	//Get input (training or testing) from file	
 	neuralnetwork.getInputFromFile();
+
 	//Train the neural network
     #if ALLOW_TRAINING
 	trainNetwork();
@@ -473,8 +555,7 @@ int main()
 	return 0;
 }
 
-
-
+//FUNCTION BODIES
 //Function to allow us to train the neural network when we want
 void trainNetwork()
 {
@@ -482,6 +563,7 @@ void trainNetwork()
 	for (int i = 0; i < MAX_ITERATIONS_FOR_TRAINING; i++)
 	{
 		neuralnetwork.feedForward();
+		
 		if (neuralnetwork.getMSE()<= MINIMUM_MSE)
 		{
 			cout << "achieved MSE less than the required minimum" << endl;
@@ -492,12 +574,17 @@ void trainNetwork()
 		//Backpropagation goes here
 	}
 	cout << "Couldnt get a mean square error lower than the required minimum" << endl;
+	cout << "Results :" << endl;
 	neuralnetwork.printResults();
+	cout << "Network Details :" << endl;
+	neuralnetwork.printNetworkDetails();
+	return;
 }
 
 //Function to allow us to test the neural network when we want
 void testNetwork()
 {
+	neuralnetwork.loadWeightsFromFile();
 	neuralnetwork.feedForward();
 	neuralnetwork.outputWeightsToFiles();
 	neuralnetwork.printNetworkDetails();
