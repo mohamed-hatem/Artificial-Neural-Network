@@ -1,4 +1,7 @@
 ﻿  main.cpp
-c:\users\dell\documents\visual studio 2017\projects\artificial-neural-network\artificial-neural-network\main.cpp(196): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-c:\users\dell\documents\visual studio 2017\projects\artificial-neural-network\artificial-neural-network\main.cpp(207): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\dell\documents\visual studio 2017\projects\artificial-neural-network\artificial-neural-network\main.cpp(174): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+c:\users\dell\documents\visual studio 2017\projects\artificial-neural-network\artificial-neural-network\main.cpp(185): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\dell\documents\visual studio 2017\projects\artificial-neural-network\artificial-neural-network\main.cpp(336): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\dell\documents\visual studio 2017\projects\artificial-neural-network\artificial-neural-network\main.cpp(613): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\dell\documents\visual studio 2017\projects\artificial-neural-network\artificial-neural-network\main.cpp(634): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
   Artificial-Neural-Network.vcxproj -> C:\Users\DELL\Documents\Visual Studio 2017\Projects\Artificial-Neural-Network\Debug\Artificial-Neural-Network.exe
