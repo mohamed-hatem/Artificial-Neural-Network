@@ -23,14 +23,15 @@ using namespace std;
 #define WEIGHTS_FILE_NAME "results/weights.txt"
 //Output file to print the weights with details in
 #define WEIGHTS_WITH_DETAILS_FILE_NAME "results/weights_with_details.txt"
+//File Name for the network training results if succesfull
+#define NETWORK_TRAINING_RESULTS_FILE_NAME "results/training_results.txt"
 //Max error that will be used for the break condition
-#define MAX_TOTAL_ERROR 0.000005
-//Minimum error that will be used for the break condition
-#define MIN_TOTAL_ERROR -0.00005
+#define MAX_TOTAL_ERROR 0.00041
 //Max number of iterations to be preformed during training
-#define MAX_EPOCHS 500
+#define MAX_EPOCHS 2000
 //Learning rate constant
-#define LEARNING_RATE 0.5
+#define LEARNING_RATE 0.4
+
 
 
 //Class to hold Neural Network data and operation that will be preformed
@@ -38,12 +39,14 @@ class NeuralNetwork
 {
 private:
 
-	//Variable to hold the current total error for the current data record
-	float error_of_current_data_record;
+
 	//The last index of data we will use for training
 	int training_data_max_index;
 	//The starting index of data we will use for testing
 	int testing_data_start_index;
+	//The mean square error variable
+	float mse;
+
 	
 	//SIZES
 	//Number of nodes in input layer
@@ -55,7 +58,7 @@ private:
 	//Number of rows in the data set
 	int data_set_size;
 
-
+	//Resources
 	//MATRICES
 	//The matrix that is holding the weights between the input nodes layer and hidden nodes layer 
 	float ** input_hidden_weights;
@@ -74,13 +77,43 @@ private:
 	float * input_values;
 	//Array to hold the output value of a certain record for the hidden layer nodes
 	float * hidden_values;
-	/*
-	*Array to hold the error values for each output node for each data record in the data set
-	*Error values will be used later to calculate the total error and backpropagation
-	*/
-	float * record_error;
 			
 	//PRIVATE FUNCTIONS
+	//Funtion to normalize input output values
+	void normalize()
+	{
+		//normalize
+		for (int i = 0; i < data_set_size; i++)
+		{
+			for (int j = 0; j < input_layer_neurons; j++)
+				data_set[i][j] /= 100.0;
+			for (int j = 0; j < output_layer_neurons; j++)
+				actual_values[i][j] /= 100.0;
+		}
+		//Transform the Normalized actual input and output values using the activation function
+		for (int i = 0; i < data_set_size; i++)
+		{
+			for (int j = 0; j < output_layer_neurons; j++)
+				activationFunction(actual_values[i][j]);
+			for (int j = 0; j < input_layer_neurons; j++)
+				activationFunction(data_set[i][j]);
+
+		}
+
+	}
+
+	//Function to calculate the mse
+	void calculateMSE(int data_record_index)
+	{
+		mse *= ((data_record_index+1)*output_layer_neurons);
+		for (int i = 0; i < output_layer_neurons; i++)
+		{
+			mse += ((actual_values[data_record_index][i]-output_values[data_record_index][i])*(actual_values[data_record_index][i] - output_values[data_record_index][i]));
+		}
+
+		mse /= ((data_record_index+2)*output_layer_neurons);
+	}
+
 	//Seed random function
 	void seedRand()
 	{
@@ -93,11 +126,11 @@ private:
 		//Convert seconds to a unsigned integer
 		srand((unsigned int)seconds);
 	}
-
+	
 	//Function to initialize the matrices and arrays
 	void initializeResources()
 	{
-
+		
 		//Initialize the matrix of weights between the input and hidden layer
 		input_hidden_weights = new float*[hidden_layer_neurons];
 		for (int i = 0; i<hidden_layer_neurons; i++)
@@ -133,9 +166,6 @@ private:
 		for (int i = 0; i < data_set_size; i++)
 			actual_values[i] = new float[output_layer_neurons];
 
-		//Initialize the record error array
-			record_error= new float[output_layer_neurons];
-
 	}
 
 	//Function to randomly generate initial weights for the neural network
@@ -165,14 +195,12 @@ private:
 
 	}
 
-	//Function to generate a random float number for the initial weights between -10 and 10
+	//Function to generate a random float number for the initial weights between 0 and 1
 	float generateRandomFloat()
 	{	
-		//Generate a random float between 0 - 10
-		float random_float = (rand() % 1001) / 100.0;
-		if(rand()%100<=50)
+		
+		float random_float = (rand() % 1001) / 1000.0;
 		return random_float;
-		return random_float * -1;
 
 	}
 
@@ -195,22 +223,6 @@ private:
 			
 			sum_of_product += (weights[i] * inputs[i]);
 		}
-		
-	}
-
-	//Function to calculate the error for a certain data record
-	void calculateErrorForCurrentTestCase(int current_data_record)
-	{
-		
-		
-		//Iterate over all the output values that was calculated from the output layer 
-		for (int i = 0; i < output_layer_neurons; i++)
-		{  // error = (actual-produced)
-			record_error[i] = 0.0;
-			record_error[i] += (actual_values[current_data_record][i] - output_values[current_data_record][i]);
-			
-		}
-		
 		
 	}
 
@@ -289,29 +301,15 @@ private:
 		}
 		output_file.close();
 	}
-
-	//Function to Calculate the Total Error for a data record
-	void calculateTotalError()
-	{
-		error_of_current_data_record = 0.0;
-
-		for (int i = 0; i < output_layer_neurons; i++)
-		{
-			error_of_current_data_record += (record_error[i] * record_error[i]);
-		}
-
-		error_of_current_data_record /= 2;
-	}
-
-
+	
 public:
 
 	//PUBLIC FUNCTIONS
-	//Function return the Total Error of a data record
-	float getTotalErrorOfCurrentRecord()
+	//Function to return the mean square error
+	float getMSE()
 	{
-		
-		return error_of_current_data_record;
+		return mse;
+
 	}
 
 	//Function to read the data set from file
@@ -352,23 +350,21 @@ public:
 			for(int j=0;j<output_layer_neurons;j++)
 			input_file >> actual_values[i][j];
 		}
-		//Transform the actual output values using the activation function
-		for (int i = 0; i < data_set_size; i++)
-		{
-			for (int j = 0; j < output_layer_neurons; j++)
-				activationFunction(actual_values[i][j]);
-		}
+		//Normalize input and output values
+		normalize();
 
 		//Close the input file
 		input_file.close();
 	}
 
 	//Print values of the network after training
-	void printResultsOfTraining(int max_index)
+	void outputResultsOfTrainingToFile()
 	{
 		float mse = 0.0;
+		ofstream output_file;
+		output_file.open(NETWORK_TRAINING_RESULTS_FILE_NAME);
 
-		for (int i = 0; i < max_index; i++)
+		for (int i = 0; i < training_data_max_index; i++)
 		{
 			for (int j = 0; j < output_layer_neurons; j++)
 			{
@@ -377,32 +373,32 @@ public:
 			}
 		}
 
-		mse = mse / ((max_index));
+		mse = mse / ((training_data_max_index));
 		
 
-		cout << "Results of the network compared to actual : " << endl;
-		cout << "MSE of training = " << mse << endl;
-		for (int i = 0; i < max_index; i++)
+		output_file << "Results of the network compared to actual : " << endl;
+		output_file << "MSE of training = " << mse << endl;
+		for (int i = 0; i < training_data_max_index; i++)
 		{
-			cout << "data set #" << i + 1 << " actual output: ";
+			output_file << "data set #" << i + 1 << " actual output: ";
 			for (int j = 0; j < output_layer_neurons; j++)
 			{
-				cout << actual_values[i][j] << " ";
+				output_file << actual_values[i][j] << " ";
 			}
-			cout << "network output: ";
+			output_file << "network output: ";
 			for (int j = 0; j < output_layer_neurons; j++)
 			{
-				cout << output_values[i][j] << " ";
+				output_file << output_values[i][j] << " ";
 			}
-			cout << endl;
+			output_file << endl;
 		}
-		
+		output_file.close();
 	}
 
 	//Print values of the network after testing
 	void printResultsOfTesting()
 	{
-		float mse = 0.0;
+		 mse = 0.0;
 
 			for (int i = testing_data_start_index; i < data_set_size; i++)
 			{
@@ -422,13 +418,13 @@ public:
 		{
 			cout << "data set #" << i + 1 << " actual output: ";
 			for (int j = 0; j < output_layer_neurons; j++)
-			{
-				cout << actual_values[i][j] << " ";
+			{ 
+				cout << actual_values[i][j] << "  ";
 			}
 			cout << "network output: ";
 			for (int j = 0; j < output_layer_neurons; j++)
 			{
-				cout << output_values[i][j] << " ";
+				cout << output_values[i][j];
 			}
 			cout << endl;
 		}
@@ -441,7 +437,6 @@ public:
 	{
 		delete[] input_values;
 		delete[] hidden_values;
-		delete[] record_error;
 
 		for (int i = 0; i < output_layer_neurons; i++)
 			delete[] output_values[i];
@@ -469,12 +464,12 @@ public:
 	//Feed forward function
 	void feedForward(int data_record_index)
 	{ 
-		
-		
-			
 			//Set the input vector with the data set values of the current data record
 			setInputValues(data_record_index);
-			
+
+			//Initialize the mse at the begining of each Epoch
+			if(data_record_index == 0)
+				mse = 0.0;
 			/*
 			 *First step is to do sum of product on each hidden layer node
 			 *Second step is to apply activation function and store the output values to be used as an input for the output layer
@@ -503,15 +498,11 @@ public:
 				//Preform sum of product on each output layer node
 				sumOfProduct(hidden_output_weights[j], hidden_values, hidden_layer_neurons, output_values[data_record_index][j]);
 				
-				
 				//Calculate the output of each output layer node by applying activiation function (Sigmoid)
 				activationFunction(output_values[data_record_index][j]);
 			}
-			
-			//Calculate the  error for each output neuron against actual value
-			calculateErrorForCurrentTestCase(data_record_index);
-		   //Calculate total error
-			calculateTotalError();
+			//Calculate MSE
+			calculateMSE(data_record_index);
 		
 	}
 
@@ -577,15 +568,19 @@ public:
 				old_weight_values[i][j] = hidden_output_weights[i][j];
 		}
 
-		float * delta_change_output = new float[output_layer_neurons],delta_weight_change=0.0, delta_change;
+		float * delta_change_output = new float[output_layer_neurons],delta_weight_change=0.0, delta_change,error=0.0;
 		//Backpropagate throught the output layer first and change the weights according to the rules
 		for (int i = 0; i < output_layer_neurons; i++)
 		{
-			delta_change_output[i] = (-1 * getTotalErrorOfCurrentRecord())*(output_values[data_record_index][i] *(1 - output_values[data_record_index][i]));
+			error = actual_values[data_record_index][i] - output_values[data_record_index][i];
+
+			delta_change_output[i] = (-1 * 0.5 * (error))*(output_values[data_record_index][i] *(1 - output_values[data_record_index][i]));
 			for (int j = 0; j < hidden_layer_neurons; j++)
 			{
 				delta_weight_change = LEARNING_RATE * delta_change_output[i] * hidden_values[j];
-				hidden_output_weights[i][j] = old_weight_values[i][j] - delta_weight_change;
+					hidden_output_weights[i][j] = old_weight_values[i][j] - delta_weight_change;
+
+				
 			}
 		}
 		float error_weight_sum_of_product;
@@ -595,18 +590,23 @@ public:
 		{
 			error_weight_sum_of_product = 0.0;
 			delta_change = 0.0;
-			for (int j = 0; j < input_layer_neurons; j++)
-			{ 
-				for (int k = 0; k< output_layer_neurons; k++)
-				{
-					error_weight_sum_of_product += (delta_change_output[k] * hidden_output_weights[k][i]);
-				}
-				
 
+			for (int k = 0; k< output_layer_neurons; k++)
+			{
+				error_weight_sum_of_product += (delta_change_output[k] * old_weight_values[k][i]);
+
+
+			}
+		
+				
+				for (int j = 0; j < input_layer_neurons; j++)
+				{
+					
 				
 				delta_change = (hidden_values[i] * (1 - hidden_values[i]))*error_weight_sum_of_product;
 				delta_weight_change = LEARNING_RATE * delta_change * input_values[j];
-				input_hidden_weights[i][j] = input_hidden_weights[i][j] - delta_weight_change;
+					input_hidden_weights[i][j] = input_hidden_weights[i][j] - delta_weight_change;
+				
 			}
 		}
 
@@ -620,8 +620,10 @@ public:
 
 	}
 
+	
 
 };
+
 
 //GLOBAL VARIABLES
 //Our neural network
@@ -637,13 +639,8 @@ int main()
 
 	//Get input (training or testing) from file	
 	neuralnetwork.getInputFromFile();
-
-	//Train the neural network
-
-	bool achieved_acceptable_error = trainNetwork();
-
-	//Test the neural network
-	if(achieved_acceptable_error)
+	//Test the neural network only if the network produces an acceptable error
+	if(trainNetwork())
 	testNetwork();
 
 	system("pause");
@@ -654,18 +651,25 @@ int main()
 //Function to allow us to train the neural network when we want
 bool trainNetwork()
 {
-	
+	int percentage_done = 10;
 	for (int i = 0; i < MAX_EPOCHS; i++)
 	{
+		if (((i+1.0)/MAX_EPOCHS)*100.0 == percentage_done)
+		{
+			cout << "****" << percentage_done << "% of epochs reached ****" << endl;
+			percentage_done += 10;
+		}
 		for (int j = 0; j < neuralnetwork.getMaxTrainingIdex(); j++)
 		{
 			neuralnetwork.feedForward(j);
-			
-			if (neuralnetwork.getTotalErrorOfCurrentRecord() < MAX_TOTAL_ERROR && neuralnetwork.getTotalErrorOfCurrentRecord() > MIN_TOTAL_ERROR)
+
+            if(neuralnetwork.getMSE()<MAX_TOTAL_ERROR)
 			{
 				cout << "achieved Total Error less than the required minimum" << endl;
-				cout << "Total Error : " << neuralnetwork.getTotalErrorOfCurrentRecord() << endl << "i = " << j << endl;
-				neuralnetwork.printResultsOfTraining(j+1);
+				cout << "Total Error : " << neuralnetwork.getMSE() << endl<< "Current Epoch: " << i+1 << endl << "Current data record = " << j+1 << endl;
+				for (int k = 0; k < neuralnetwork.getMaxTrainingIdex(); k++)
+					neuralnetwork.feedForward(k);
+				neuralnetwork.outputResultsOfTrainingToFile();
 				neuralnetwork.outputWeightsToFiles();
 				return true;
 			}
@@ -677,7 +681,8 @@ bool trainNetwork()
 		
 	}
 	cout << "Couldnt get an error value lower than the required minimum" << endl;
-	neuralnetwork.printResultsOfTraining(neuralnetwork.getMaxTrainingIdex());
+	cout << "Total Error : " << neuralnetwork.getMSE() << endl;
+	neuralnetwork.outputResultsOfTrainingToFile();
 	neuralnetwork.outputWeightsToFiles();
 	return false;
 }
