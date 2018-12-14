@@ -26,11 +26,11 @@ using namespace std;
 //File Name for the network training results if succesfull
 #define NETWORK_TRAINING_RESULTS_FILE_NAME "results/training_results.txt"
 //Max error that will be used for the break condition
-#define MAX_TOTAL_ERROR 0.00041
+#define MAX_TOTAL_ERROR 0.00049
 //Max number of iterations to be preformed during training
-#define MAX_EPOCHS 2000
+#define MAX_EPOCHS 500
 //Learning rate constant
-#define LEARNING_RATE 0.4
+#define LEARNING_RATE 0.5
 
 
 
@@ -195,12 +195,14 @@ private:
 
 	}
 
-	//Function to generate a random float number for the initial weights between 0 and 1
+	//Function to generate a random float number for the initial weights between -3 and 3
 	float generateRandomFloat()
 	{	
 		
-		float random_float = (rand() % 1001) / 1000.0;
+		float random_float = (rand() % 3001) / 1000.0;
+		if(rand()%101<=50)
 		return random_float;
+		return -1.0 * random_float;
 
 	}
 
@@ -663,10 +665,10 @@ bool trainNetwork()
 		{
 			neuralnetwork.feedForward(j);
 
-            if(neuralnetwork.getMSE()<MAX_TOTAL_ERROR)
+            if(neuralnetwork.getMSE()<MAX_TOTAL_ERROR && j>(neuralnetwork.getMaxTrainingIdex()/2))
 			{
 				cout << "achieved Total Error less than the required minimum" << endl;
-				cout << "Total Error : " << neuralnetwork.getMSE() << endl<< "Current Epoch: " << i+1 << endl << "Current data record = " << j+1 << endl;
+				cout << "MSE of training : " << neuralnetwork.getMSE() << endl<< "Current Epoch: " << i+1 << endl << "Current data record = " << j+1 << endl;
 				for (int k = 0; k < neuralnetwork.getMaxTrainingIdex(); k++)
 					neuralnetwork.feedForward(k);
 				neuralnetwork.outputResultsOfTrainingToFile();
@@ -681,7 +683,7 @@ bool trainNetwork()
 		
 	}
 	cout << "Couldnt get an error value lower than the required minimum" << endl;
-	cout << "Total Error : " << neuralnetwork.getMSE() << endl;
+	cout << "MSE of training : " << neuralnetwork.getMSE() << endl;
 	neuralnetwork.outputResultsOfTrainingToFile();
 	neuralnetwork.outputWeightsToFiles();
 	return false;
