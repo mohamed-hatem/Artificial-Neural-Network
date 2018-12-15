@@ -1,6 +1,6 @@
 Results of the network compared to actual : 
 MSE of training = 0.000478004
-data set #1 actual output: 0.535291 network output: 0.591403 
+data set #1 actual output: 0.535291 network output: 0.537344
 data set #2 actual output: 0.557124 network output: 0.577219 
 data set #3 actual output: 0.627054 network output: 0.606447 
 data set #4 actual output: 0.531558 network output: 0.562203 
