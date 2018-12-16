@@ -26,7 +26,7 @@ using namespace std;
 //File Name for the network training results if succesfull
 #define NETWORK_TRAINING_RESULTS_FILE_NAME "results/training_results.txt"
 //Max error that will be used for the break condition
-#define MAX_TOTAL_ERROR 0.00049
+#define MAX_TOTAL_ERROR 0.00048
 //Max number of iterations to be preformed during training
 #define MAX_EPOCHS 500
 //Learning rate constant
@@ -79,6 +79,7 @@ private:
 	float * hidden_values;
 			
 	//PRIVATE FUNCTIONS
+	
 	//Funtion to normalize input output values
 	void normalize()
 	{
@@ -91,7 +92,7 @@ private:
 				actual_values[i][j] /= 100.0;
 		}
 		//Transform the Normalized actual input and output values using the activation function
-		for (int i = 0; i < data_set_size; i++)
+	for (int i = 0; i < data_set_size; i++)
 		{
 			for (int j = 0; j < output_layer_neurons; j++)
 				activationFunction(actual_values[i][j]);
@@ -571,7 +572,7 @@ public:
 		}
 
 		float * delta_change_output = new float[output_layer_neurons],delta_weight_change=0.0, delta_change,error=0.0;
-		//Backpropagate throught the output layer first and change the weights according to the rules
+		//Backpropagate through the output layer first and change the weights according to the rules
 		for (int i = 0; i < output_layer_neurons; i++)
 		{
 			error = actual_values[data_record_index][i] - output_values[data_record_index][i];
@@ -587,7 +588,7 @@ public:
 		}
 		float error_weight_sum_of_product;
 
-		//Backpropagate throught the hidden layer and change the weights according to the rules
+		//Backpropagate through the hidden layer and change the weights according to the rules
 		for (int i = 0; i < hidden_layer_neurons; i++)
 		{
 			error_weight_sum_of_product = 0.0;
@@ -598,16 +599,14 @@ public:
 				error_weight_sum_of_product += (delta_change_output[k] * old_weight_values[k][i]);
 
 
-			}
-		
-				
-				for (int j = 0; j < input_layer_neurons; j++)
-				{
+			}	
+			for (int j = 0; j < input_layer_neurons; j++)
+			{
 					
 				
 				delta_change = (hidden_values[i] * (1 - hidden_values[i]))*error_weight_sum_of_product;
 				delta_weight_change = LEARNING_RATE * delta_change * input_values[j];
-					input_hidden_weights[i][j] = input_hidden_weights[i][j] - delta_weight_change;
+				input_hidden_weights[i][j] = input_hidden_weights[i][j] - delta_weight_change;
 				
 			}
 		}
@@ -665,18 +664,19 @@ bool trainNetwork()
 		{
 			neuralnetwork.feedForward(j);
 
-            if(neuralnetwork.getMSE()<MAX_TOTAL_ERROR && j>(neuralnetwork.getMaxTrainingIdex()/2))
-			{
-				cout << "achieved Total Error less than the required minimum" << endl;
-				cout << "MSE of training : " << neuralnetwork.getMSE() << endl<< "Current Epoch: " << i+1 << endl << "Current data record = " << j+1 << endl;
-				for (int k = 0; k < neuralnetwork.getMaxTrainingIdex(); k++)
-					neuralnetwork.feedForward(k);
-				neuralnetwork.outputResultsOfTrainingToFile();
-				neuralnetwork.outputWeightsToFiles();
-				return true;
-			}
 			
 			neuralnetwork.backPropagation(j);
+		}
+
+		if (neuralnetwork.getMSE()<MAX_TOTAL_ERROR)
+		{
+			cout << "achieved Total Error less than the required minimum" << endl;
+			cout << "MSE of training : " << neuralnetwork.getMSE() << endl << "Current Epoch: " << i + 1 << endl;
+			/*for (int k = 0; k < neuralnetwork.getMaxTrainingIdex(); k++)
+				neuralnetwork.feedForward(k);*/
+			neuralnetwork.outputResultsOfTrainingToFile();
+			neuralnetwork.outputWeightsToFiles();
+			return true;
 		}
 		
 		
